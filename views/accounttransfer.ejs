@@ -1,0 +1,78 @@
+<%- include("header") -%>
+
+<div class="container">
+  <h1>Account Transfer</h1>
+  
+  <% if (message) { %>
+    <div class="alert alert-info"><%= message %></div>
+  <% } %>
+
+ <form action="/transfer" method="POST">
+  <input type="text" name="transferFrom" id="transferFrom" value="<%= from %>" readonly>
+  <input type="text" name="transferTo" id="transferTo" value="<%= to %>" placeholder="Enter Account Number" required>
+  <input type="number" step="0.01" min="0.01" name="amount" id="amount" placeholder="Enter Amount" required>
+  <input type="date" name="transferDate" id="transferDate" value="<%= new Date().toISOString().slice(0, 10) %>">
+  <textarea name="note" id="note" placeholder="Note on transfer (optional)"></textarea>
+  <button type="submit">Transfer</button>
+</form>
+
+  <h2>Transaction History</h2>
+  <% if (transactions.length > 0) { %>
+    <ul>
+      <% transactions.forEach(transaction => { %>
+        <li>
+          <strong>Date:</strong> <%= transaction.date.toDateString() %> <br>
+          <strong>From:</strong> <%= transaction.sending_account_num %> <br>
+          <strong>To:</strong> <%= transaction.receiving_account_num %> <br>
+          <strong>Amount:</strong> $<%= transaction.amount %> <br>
+          <strong>Status:</strong> <%= transaction.status %> <br>
+          <strong>Note:</strong> <%= transaction.note %>
+        </li>
+      <% }) %>
+    </ul>
+  <% } else { %>
+    <p>No transactions found.</p> // If there are no transactions, display that there are none.
+  <% } %>
+</div>
+
+<%- include("footer") -%>
+
+    <script>
+    window.onload = function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const message = urlParams.get('message');
+      if (message) {
+        alert(message);
+      }
+    };
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById("transferForm");
+        form.addEventListener("submit", function(event) {
+            event.preventDefault();
+            fetch("/transfer", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    transferFrom: document.getElementById("transferFrom").value,
+                    transferTo: document.getElementById("transferTo").value,
+                    amount: document.getElementById("amount").value,
+                    transferDate: document.getElementById("transferDate").value,
+                    note: document.getElementById("note").value
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = `/account_dashboard?accountnum=${document.getElementById("transferFrom").value}&message=Transfer completed successfully.`;
+                } else {
+                    window.location.href = `/account_dashboard?accountnum=${document.getElementById("transferFrom").value}&message=${data.message}`;
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        });
+    });
+    </script>
